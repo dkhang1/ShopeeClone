@@ -1,9 +1,9 @@
 import axios, { AxiosError, type AxiosInstance } from 'axios'
-import { config } from 'process'
 import { toast } from 'react-toastify'
 import HttpStatusCode from 'src/constants/HttpStatusCode.enum'
+import { path } from 'src/constants/path'
 import { AuthResponse } from 'src/types/auth.type'
-import { clearAccesTokenFromLocal, getAccessTokenFromLocal, saveAccessTokenToLocal } from './auth'
+import { clearLocal, getAccessTokenFromLocal, saveAccessTokenToLocal, saveProfileToLocal } from './auth'
 class Http {
   instance: AxiosInstance
   private accessToken: string
@@ -32,12 +32,14 @@ class Http {
       this.instance.interceptors.response.use(
         (response) => {
           const { url } = response.config
-          if (url === '/login' || url === '/register') {
-            this.accessToken = (response.data as AuthResponse).data.access_token
+          if (url === path.login || url === path.register) {
+            const result = response.data as AuthResponse
+            this.accessToken = result.data.access_token
             saveAccessTokenToLocal(this.accessToken)
-          } else if (url === '/logout') {
+            saveProfileToLocal(result.data.user)
+          } else if (url === path.logout) {
             this.accessToken = ''
-            clearAccesTokenFromLocal()
+            clearLocal()
           }
           return response
         },

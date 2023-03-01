@@ -1,30 +1,34 @@
 import { useForm } from 'react-hook-form'
 import { Link, useNavigate } from 'react-router-dom'
-import { RegisterForm, schema } from 'src/utils/rules'
+import { Schema, schema } from 'src/utils/rules'
 import Input from 'src/components/Input'
 import { yupResolver } from '@hookform/resolvers/yup'
 import { useMutation } from '@tanstack/react-query'
-import { registerAccount } from 'src/apis/auth.api'
+import authApi from 'src/apis/auth.api'
 import { omit } from 'lodash'
 import { isAxiosUnprocessableEntityError } from 'src/utils/utils'
 import { ErrorResponse } from 'src/types/ultis.type'
 import { AppContext } from 'src/contexts/app.context'
 import { useContext } from 'react'
+import Button from 'src/components/Button'
+import { path } from 'src/constants/path'
+import { AuthResponse } from 'src/types/auth.type'
 
-type FormData = RegisterForm
+type FormData = Pick<Schema, 'email' | 'password' | 'confirm_password'>
+const registerSchema = schema.pick(['email', 'password', 'confirm_password'])
 
 export default function Register() {
-  const { setIsAuthenticated } = useContext(AppContext)
+  const { setIsAuthenticated, setProfile } = useContext(AppContext)
   const navigate = useNavigate()
   const {
     register,
     handleSubmit,
     setError,
     formState: { errors }
-  } = useForm<FormData>({ resolver: yupResolver(schema) })
+  } = useForm<FormData>({ resolver: yupResolver(registerSchema) })
 
   const registerAccountMutation = useMutation({
-    mutationFn: (body: Omit<FormData, 'confirm_password'>) => registerAccount(body)
+    mutationFn: (body: Omit<FormData, 'confirm_password'>) => authApi.registerAccount(body)
   })
   // const rules = getRules(getValues)
 
@@ -32,8 +36,10 @@ export default function Register() {
     const body = omit(data, ['confirm_password'])
 
     registerAccountMutation.mutate(body, {
-      onSuccess: () => {
+      onSuccess: (data) => {
+        const result = data.data as AuthResponse
         setIsAuthenticated(true)
+        setProfile(result.data.user)
         navigate('/')
       },
       onError: (error) => {
@@ -87,17 +93,19 @@ export default function Register() {
                 errorMessage={errors.confirm_password?.message}
               />
               <div className='mt-3'>
-                <button
+                <Button
                   type='submit'
-                  className='w-full rounded-sm bg-orange py-4 px-2 text-center uppercase text-white opacity-70 transition-all hover:opacity-100'
+                  className='flex w-full items-center justify-center rounded-sm bg-orange py-4 px-2 text-center uppercase text-white opacity-70 transition-all hover:opacity-100'
+                  isLoading={registerAccountMutation.isLoading}
+                  disabled={registerAccountMutation.isLoading}
                 >
                   Đăng ký
-                </button>
+                </Button>
               </div>
               <div className='mt-8 text-center'>
                 <div className='flex items-center justify-center'>
                   <span className='text-slate-400'>Bạn đã có tài khoản ?</span>
-                  <Link to='/login' className='ml-2 font-semibold text-orange'>
+                  <Link to={path.login} className='ml-2 font-semibold text-orange'>
                     Đăng nhập
                   </Link>
                 </div>
