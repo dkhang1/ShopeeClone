@@ -1,19 +1,28 @@
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import DOMPurify from 'dompurify'
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
+import { toast } from 'react-toastify'
 import productApi from 'src/apis/product.api'
+import purchasesApi from 'src/apis/purchase.api'
 import QuantityController from 'src/components/QuantityController'
 import StarRating from 'src/components/StarRating'
+import { path } from 'src/constants/path'
+import { purchaseStatus } from 'src/constants/purchase'
+import { AppContext } from 'src/contexts/app.context'
 import { Product as ProductType, ProductListConfig } from 'src/types/product.type'
 import { formatCurrency, formatNumber, getIdFromNameId, rateSale } from 'src/utils/utils'
 import Product from '../ProductList/components/Product'
 
 export default function ProductDetail() {
+  const queryClient = useQueryClient()
   const [buyCount, setBuyCount] = useState(1)
 
   const [currentIndexImg, setCurrentIndexImg] = useState([0, 5])
   const [activeImage, setActiveImage] = useState('')
+
+  const { isAuthenticated } = useContext(AppContext)
+  const navigate = useNavigate()
 
   const { nameId } = useParams()
   const id = getIdFromNameId(nameId as string)
@@ -40,6 +49,9 @@ export default function ProductDetail() {
     () => (product ? product.images.slice(...currentIndexImg) : []),
     [product, currentIndexImg]
   )
+
+  const addToCartMutation = useMutation(purchasesApi.addToCart)
+
   useEffect(() => {
     if (product && product.images.length > 0) {
       setActiveImage(product.images[0])
@@ -88,6 +100,25 @@ export default function ProductDetail() {
 
   const handleBuyCount = (value: number) => {
     setBuyCount(value)
+  }
+
+  const addToCart = () => {
+    if (!isAuthenticated) {
+      return navigate(path.login)
+    } else {
+      addToCartMutation.mutate(
+        {
+          buy_count: buyCount,
+          product_id: product?._id as string
+        },
+        {
+          onSuccess: (data) => {
+            toast.success(data.data.message)
+            queryClient.invalidateQueries({ queryKey: ['purchases', { status: purchaseStatus.inCart }] })
+          }
+        }
+      )
+    }
   }
 
   if (!product) return null
@@ -196,7 +227,10 @@ export default function ProductDetail() {
                 <div className='ml-6 text-sm text-gray-500'>{product.quantity} sản phẩm có sẵn</div>
               </div>
               <div className='mt-8 flex items-center'>
-                <button className='flex h-12 items-center justify-center rounded-sm border border-orange bg-orange/10 px-5 capitalize text-orange shadow-sm hover:bg-orange/5'>
+                <button
+                  className='flex h-12 items-center justify-center rounded-sm border border-orange bg-orange/10 px-5 capitalize text-orange shadow-sm hover:bg-orange/5'
+                  onClick={addToCart}
+                >
                   <svg
                     enableBackground='new 0 0 15 15'
                     viewBox='0 0 15 15'

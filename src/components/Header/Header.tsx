@@ -1,22 +1,28 @@
 import { yupResolver } from '@hookform/resolvers/yup'
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { omit } from 'lodash'
-import { useContext } from 'react'
+import { useContext, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { createSearchParams, Link, useNavigate } from 'react-router-dom'
 import authApi from 'src/apis/auth.api'
+import purchasesApi from 'src/apis/purchase.api'
 import { path } from 'src/constants/path'
+import { purchaseStatus } from 'src/constants/purchase'
 import { AppContext } from 'src/contexts/app.context'
 import useQueryConfig from 'src/hooks/useQueryConfig'
 import { schema, Schema } from 'src/utils/rules'
 import Popover from '../Popover'
+import { formatCurrency, generateNameId } from 'src/utils/utils'
 
 type FormData = Pick<Schema, 'name'>
 
 const nameSchema = schema.pick(['name'])
 
+const MAX_PURCHASES = 5
+
 export default function Header() {
   const queryConfig = useQueryConfig()
+  const queryClient = useQueryClient()
   const navigate = useNavigate()
   const { handleSubmit, register } = useForm<FormData>({
     defaultValues: {
@@ -32,11 +38,26 @@ export default function Header() {
     onSuccess: () => {
       setIsAuthenticated(false)
       setProfile(null)
+      queryClient.removeQueries({ queryKey: ['purchases', { status: purchaseStatus.inCart }] })
     }
   })
   const handleLogout = () => {
     logoutAccountMutation.mutate()
   }
+
+  // cart
+  const { data: purchaseInCartData } = useQuery({
+    queryKey: ['purchases', { status: purchaseStatus.inCart }],
+    queryFn: () => purchasesApi.getPurchaseLisst({ status: purchaseStatus.inCart }),
+    enabled: isAuthenticated
+  })
+  const purchaseInCart = purchaseInCartData?.data.data
+
+  useEffect(() => {
+    return () => {
+      console.log('unmout')
+    }
+  }, [])
 
   // Search handle
   const onSubmitSearch = handleSubmit((data) => {
@@ -178,36 +199,62 @@ export default function Header() {
               offSet={13}
               renderPopover={
                 <div className='relative max-w-[400px] rounded-sm border border-gray-200 bg-white text-sm shadow-sm'>
-                  <div className='p-2'>
-                    <div className='capitalize text-gray-400'>sản phẩm mới thêm</div>
-                    <div className='mt-5'>
-                      <div className='flex items-start py-2'>
-                        <div className='flex-shrink-0 '>
-                          <img
-                            src='https://cf.shopee.vn/file/sg-11134201-22090-epgo53ojn2hv51_tn'
-                            alt='sanpham'
-                            className='h-10 w-10 object-cover '
-                          />
+                  {purchaseInCart ? (
+                    <div className='p-2'>
+                      <div className='capitalize text-gray-400'>sản phẩm mới thêm</div>
+                      <div className='mt-5'>
+                        {purchaseInCart.slice(0, MAX_PURCHASES).map((purchase) => (
+                          <Link
+                            to={`${path.home}${generateNameId({
+                              name: purchase.product.name,
+                              id: purchase.product._id
+                            })}`}
+                            className='flex items-start py-2 hover:bg-gray-50'
+                            key={purchase._id}
+                          >
+                            <div className='flex-shrink-0 '>
+                              <img
+                                src={purchase.product.image}
+                                alt={purchase.product.name}
+                                className='h-10 w-10 object-cover '
+                              />
+                            </div>
+                            <div className='ml-2 flex-grow overflow-hidden'>
+                              <div className='truncate'>{purchase.product.name}</div>
+                            </div>
+                            <div className='ml-2 flex-shrink-0 '>
+                              <span className='text-orange'>₫{formatCurrency(purchase.product.price)}</span>
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+                      <div className='mt-6 flex items-center justify-between'>
+                        <div className='text-xs capitalize text-gray-500'>
+                          {purchaseInCart.length > MAX_PURCHASES ? purchaseInCart.length - MAX_PURCHASES : ''} thêm vào
+                          giỏ hàng
                         </div>
-                        <div className='ml-2 flex-grow overflow-hidden'>
-                          <div className='truncate'>GIỎ ĐỰNG ĐỒ GIẶT CHÍNH HÃNG IKA THỤY ĐIỂN JALL - EMMO.VN</div>
-                        </div>
-                        <div className='ml-2 flex-shrink-0 '>
-                          <span className='text-orange'>₫159.000</span>
-                        </div>
+                        <Link
+                          to={path.cart}
+                          className='rounded-sm bg-orange px-4 py-2 capitalize text-white hover:bg-opacity-80'
+                        >
+                          xem giỏ hàng
+                        </Link>
                       </div>
                     </div>
-                    <div className='mt-6 flex items-center justify-between'>
-                      <div className='text-xs capitalize text-gray-500'>1 thêm vào giỏ hàng</div>
-                      <button className='rounded-sm bg-orange px-4 py-2 capitalize text-white hover:bg-opacity-80'>
-                        xem giỏ hàng
-                      </button>
+                  ) : (
+                    <div className='flex h-[300px] w-[300px] flex-col items-center justify-center p-2'>
+                      <img
+                        src='https://deo.shopeemobile.com/shopee/shopee-pcmall-live-sg/assets/9bdd8040b334d31946f49e36beaf32db.png'
+                        alt='no purchase'
+                        className='h-24 w-24'
+                      />
+                      <div className='mt-3'>Chưa có sản phẩm</div>
                     </div>
-                  </div>
+                  )}
                 </div>
               }
             >
-              <Link to='/'>
+              <Link to='/' className='relative'>
                 <svg
                   xmlns='http://www.w3.org/2000/svg'
                   fill='none'
@@ -222,6 +269,11 @@ export default function Header() {
                     d='M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 00-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 00-16.536-1.84M7.5 14.25L5.106 5.272M6 20.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm12.75 0a.75.75 0 11-1.5 0 .75.75 0 011.5 0z'
                   />
                 </svg>
+                {isAuthenticated && (
+                  <span className='absolute top-[-5px] left-[17px]  rounded-full  border-[2px] border-orange bg-white px-[7px]  text-xs text-orange'>
+                    {purchaseInCart?.length}
+                  </span>
+                )}
               </Link>
             </Popover>
           </div>
