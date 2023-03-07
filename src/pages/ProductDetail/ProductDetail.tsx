@@ -121,6 +121,16 @@ export default function ProductDetail() {
     }
   }
 
+  const buyNow = async () => {
+    const res = await addToCartMutation.mutateAsync({ buy_count: buyCount, product_id: product?._id as string })
+    const purchase = res.data.data
+    navigate(path.cart, {
+      state: {
+        purchaseId: purchase._id
+      }
+    })
+  }
+
   if (!product) return null
 
   return (
@@ -257,6 +267,7 @@ export default function ProductDetail() {
                   <span>thêm vào giỏ hàng</span>
                 </button>
                 <button
+                  onClick={buyNow}
                   className='ml-4 h-12 min-w-[5rem] rounded-sm bg-orange px-5 text-center capitalize text-white shadow-sm outline-none hover:bg-orange/80
                 '
                 >
