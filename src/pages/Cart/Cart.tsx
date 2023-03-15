@@ -1,7 +1,7 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
 import produce from 'immer'
 import { keyBy } from 'lodash'
-import { useContext, useEffect } from 'react'
+import { useContext, useEffect, useMemo } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import purchasesApi from 'src/apis/purchase.api'
@@ -46,15 +46,23 @@ export default function Cart() {
   })
 
   const purchaseInCart = purchaseInCartData?.data.data
-  const isAllChecked = extendedPurchase.every((purchase) => purchase.checked)
-  const checkedPurchases = extendedPurchase.filter((purchase) => purchase.checked)
+  const isAllChecked = useMemo(() => extendedPurchase.every((purchase) => purchase.checked), [extendedPurchase])
+  const checkedPurchases = useMemo(() => extendedPurchase.filter((purchase) => purchase.checked), [extendedPurchase])
   const checkedPurchaseCount = checkedPurchases.length
-  const totalCheckedPurchasePrice = checkedPurchases.reduce((result, current) => {
-    return result + current.buy_count * current.price
-  }, 0)
-  const totalCheckedPurchaseSavingPrice = checkedPurchases.reduce((result, current) => {
-    return result + current.buy_count * (current.price_before_discount - current.price)
-  }, 0)
+  const totalCheckedPurchasePrice = useMemo(
+    () =>
+      checkedPurchases.reduce((result, current) => {
+        return result + current.buy_count * current.price
+      }, 0),
+    [checkedPurchases]
+  )
+  const totalCheckedPurchaseSavingPrice = useMemo(
+    () =>
+      checkedPurchases.reduce((result, current) => {
+        return result + current.buy_count * (current.price_before_discount - current.price)
+      }, 0),
+    [checkedPurchases]
+  )
 
   const location = useLocation()
   const choosenPurchaseIdFormLocation = (location.state as { purchaseId: string } | null)?.purchaseId

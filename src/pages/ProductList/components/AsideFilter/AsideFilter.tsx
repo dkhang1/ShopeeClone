@@ -148,6 +148,7 @@ export default function AsideFilter({ categories, queryConfig }: Props) {
                     className='grow'
                     placeholder='₫ TỪ'
                     classNameInput='p-1 w-full rounded-sm border border-gray-300  outline-none focus:border-gray-500 focus:shadow-sm'
+                    // {...field}
                     onChange={(e) => {
                       field.onChange(e)
                       trigger('price_max')

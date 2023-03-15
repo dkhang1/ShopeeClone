@@ -5,6 +5,7 @@ import authApi from 'src/apis/auth.api'
 import { path } from 'src/constants/path'
 import { purchaseStatus } from 'src/constants/purchase'
 import { AppContext } from 'src/contexts/app.context'
+import { getAvatarUrl } from 'src/utils/utils'
 import Popover from '../Popover'
 
 export default function NavHeader() {
@@ -81,11 +82,28 @@ export default function NavHeader() {
           }
         >
           <div className='mr-2 h-6 w-6 flex-shrink-0'>
-            <img
-              className='h-full w-full rounded-full object-cover'
-              src='https://cf.shopee.vn/file/61ef3904a723541422db7944f0638338_tn'
-              alt='avatar'
-            />
+            {profile?.avatar ? (
+              <img
+                className='h-full w-full rounded-full object-cover'
+                src={getAvatarUrl(profile?.avatar)}
+                alt='avatar'
+              />
+            ) : (
+              <svg
+                xmlns='http://www.w3.org/2000/svg'
+                fill='none'
+                viewBox='0 0 24 24'
+                strokeWidth='1.5'
+                stroke='currentColor'
+                className='h-full w-full rounded-full bg-white fill-orange stroke-orange'
+              >
+                <path
+                  strokeLinecap='round'
+                  strokeLinejoin='round'
+                  d='M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z'
+                />
+              </svg>
+            )}
           </div>
           <div>{profile?.email}</div>
         </Popover>
