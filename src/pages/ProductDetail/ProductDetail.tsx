@@ -231,6 +231,7 @@ export default function ProductDetail() {
                   onType={handleBuyCount}
                   onIncrease={handleBuyCount}
                   onDecrease={handleBuyCount}
+                  classNameError='disabled'
                   max={product.quantity}
                   value={buyCount}
                 />
