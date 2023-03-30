@@ -91,7 +91,7 @@ export default function HistoryPurchase() {
               ))}
             </div>
           ) : (
-            <div className='mt-10 flex min-h-[500px] flex-col items-center justify-center bg-white'>
+            <div className='mt-4 flex min-h-[500px] flex-col items-center justify-center bg-white'>
               <img
                 src='https://deo.shopeemobile.com/shopee/shopee-pcmall-live-sg/assets/5fafbb923393b712b96488590b8f781f.png'
                 alt='no purchase'
