@@ -5,6 +5,7 @@ import { AppContext } from './contexts/app.context'
 import CartLayout from './layouts/CartLayout'
 import MainLayout from './layouts/MainLayout'
 import RegisterLayout from './layouts/RegisterLayout'
+import Page404 from './pages/404/Page404'
 import Cart from './pages/Cart'
 import Login from './pages/Login'
 import ProductDetail from './pages/ProductDetail'
@@ -97,6 +98,10 @@ export default function useRouteElements() {
           )
         }
       ]
+    },
+    {
+      path: '*',
+      element: <Page404 />
     }
   ])
 
